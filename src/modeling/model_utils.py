@@ -1,8 +1,9 @@
 import torch, data_utils, pickle, time, json, copy
+from tqdm import tqdm
 from sklearn.metrics import f1_score, precision_score, recall_score
 import numpy as np
 import torch.nn as nn
-
+from tqdm import trange
 
 class ModelHandler:
     '''
@@ -94,6 +95,7 @@ class ModelHandler:
         return self.score_dict
 
 
+# ! 训练就是这个handler
 class TorchModelHandler:
     '''
     Class that holds a model and provides the functionality to train it,
@@ -242,22 +244,31 @@ class TorchModelHandler:
         self.model.train()
         self.loss = 0.
         start_time = time.time()
-        for i_batch, sample_batched in enumerate(self.dataloader):
-            self.model.zero_grad()
 
-            y_pred, labels = self.get_pred_with_grad(sample_batched)
+        with trange(self.dataloader.num_batches()) as t:
+            for index in t:
+        # for i_batch, sample_batched in enumerate(self.dataloader):
+                sample_batched = next(self.dataloader)
 
-            label_tensor = torch.tensor(labels)
-            if self.use_cuda:
-                label_tensor = label_tensor.to(self.device)
+                self.model.zero_grad()
 
-            graph_loss = self.loss_function(y_pred, label_tensor)
+                y_pred, labels = self.get_pred_with_grad(sample_batched)
 
-            self.loss += graph_loss.item()
+                label_tensor = torch.tensor(labels)
+                if self.use_cuda:
+                    label_tensor = label_tensor.to(self.device)
 
-            graph_loss.backward()
+                graph_loss = self.loss_function(y_pred, label_tensor)
 
-            self.optimizer.step()
+                self.loss += graph_loss.item()
+
+                graph_loss.backward()
+
+                self.optimizer.step()
+
+                t.set_description("{:d} loss:{:3f}".format(index, graph_loss.item()))
+                value_dict = {"loss_avg": self.loss/(index+1)}
+                t.set_postfix(value_dict)
 
         end_time = time.time()
         print("   took: {:.1f} min".format((end_time - start_time)/60.))
@@ -304,6 +315,7 @@ class TorchModelHandler:
 
         return self.score_dict
 
+    # 这里进行评估
     def predict(self, data=None, correct_preds=False):
         all_y_pred = None
         all_labels = None
@@ -317,42 +329,54 @@ class TorchModelHandler:
             data = self.dataloader
 
         t2pred = dict()
-        for sample_batched in data:
 
-            with torch.no_grad():
-                y_pred, labels = self.get_pred_noupdate(sample_batched)
+        lenght = int(len(data) * 1.0)
+        with trange(lenght) as pbar:
+            # pbar = tqdm(len(data))
+            for index in range(lenght):
+                sample_batched = next(data)
+                
+                if index*len(sample_batched) >= lenght:
+                    break
+                pbar.update(len(sample_batched))
 
-                label_tensor = torch.tensor(labels)
-                if self.use_cuda:
-                    label_tensor = label_tensor.to(self.device)
-                self.loss += self.loss_function(y_pred, label_tensor).item()
+                with torch.no_grad():
+                    y_pred, labels = self.get_pred_noupdate(sample_batched)
 
-                if isinstance(y_pred, dict):
-                    y_pred_arr = y_pred['preds'].detach().cpu().numpy()
-                else:
-                    y_pred_arr = y_pred.detach().cpu().numpy()
-                ls = np.array(labels)
+                    label_tensor = torch.tensor(labels)
+                    if self.use_cuda:
+                        label_tensor = label_tensor.to(self.device)
+                    self.loss += self.loss_function(y_pred, label_tensor).item()
 
-                m = [b['seen'] for b in sample_batched]
-                if correct_preds:
-                    ct = [b['contains_topic?'] for b in sample_batched]
+                    if isinstance(y_pred, dict):
+                        y_pred_arr = y_pred['preds'].detach().cpu().numpy()
+                    else:
+                        y_pred_arr = y_pred.detach().cpu().numpy()
+                    ls = np.array(labels)
 
-                for bi, b in enumerate(sample_batched):
-                    t = b['ori_topic']
-                    t2pred[t] = t2pred.get(t, ([], []))
-                    t2pred[t][0].append(y_pred_arr[bi, :])
-                    t2pred[t][1].append(ls[bi])
+                    m = [b['seen'] for b in sample_batched]
+                    if correct_preds:
+                        ct = [b['contains_topic?'] for b in sample_batched]
 
-                if all_y_pred is None:
-                    all_y_pred = y_pred_arr
-                    all_labels = ls
-                    all_marks = m
-                    if correct_preds: all_ct = ct
-                else:
-                    all_y_pred = np.concatenate((all_y_pred, y_pred_arr), 0)
-                    all_labels = np.concatenate((all_labels, ls), 0)
-                    all_marks = np.concatenate((all_marks, m), 0)
-                    if correct_preds: all_ct = np.concatenate((all_ct, ct), 0)
+                    for bi, b in enumerate(sample_batched):
+                        t = b['ori_topic']
+                        t2pred[t] = t2pred.get(t, ([], []))
+                        t2pred[t][0].append(y_pred_arr[bi, :])
+                        t2pred[t][1].append(ls[bi])
+
+                    if all_y_pred is None:
+                        all_y_pred = y_pred_arr
+                        all_labels = ls
+                        all_marks = m
+                        if correct_preds: all_ct = ct
+                    else:
+                        all_y_pred = np.concatenate((all_y_pred, y_pred_arr), 0)
+                        all_labels = np.concatenate((all_labels, ls), 0)
+                        all_marks = np.concatenate((all_marks, m), 0)
+                        if correct_preds: all_ct = np.concatenate((all_ct, ct), 0)
+                    pass
+                pass
+            pass
 
         for t in t2pred:
             t2pred[t] = (np.argmax(t2pred[t][0], axis=1), t2pred[t][1])

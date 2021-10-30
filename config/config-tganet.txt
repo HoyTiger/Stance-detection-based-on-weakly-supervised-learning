@@ -1,7 +1,7 @@
 name:tganet_t7
 ckp_path:../checkpoints/
 res_path:../data/
-b:64
+b:32
 text_dim:768
 use_ori_topic:0
 epochs:50

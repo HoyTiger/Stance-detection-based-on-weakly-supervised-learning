@@ -32,6 +32,7 @@ For example:
 cd src/
 ./train.sh ../config/config-tganet.txt 0 "f-0_macro"
 ```
+<!-- ./train.sh ../config/config-tganet.txt 0 "f-0_macro" 2>&1 | tee train.log -->
 Opimization key is for early stopping. Potential values are
 - "f_macro": macro F1 on all examples in the dev set
 - "f-0_macro": macro F1 on zero-shot examples in the dev set

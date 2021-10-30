@@ -5,6 +5,7 @@ from functools import reduce
 from transformers import BertTokenizer
 
 
+# ! 这个是dev数据加载
 class StanceData(Dataset):
     '''
     Holds the stance dataset.

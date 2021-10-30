@@ -1,16 +1,19 @@
 import numpy as np
 import torch, sys, argparse, time
+import logging
 sys.path.append('./modeling')
 import models as bm
 import data_utils, model_utils, datasets
 import input_models as im
 import torch.optim as optim
 import torch.nn as nn
+import os.path as osp
+import os
+logging.getLogger().setLevel(logging.INFO)
 
 SEED  = 0
 NUM_GPUS = None
 use_cuda = torch.cuda.is_available()
-
 
 def train(model_handler, num_epochs, verbose=True, dev_data=None,
           early_stopping=False, num_warm=0, is_bert=False):
@@ -26,28 +29,46 @@ def train(model_handler, num_epochs, verbose=True, dev_data=None,
     :param corpus_samplers: list of samplers for individual corpora, None
                             if only evaling on the full corpus.
     '''
+    logging.info("进入train函数")
     prev_dev_loss = 0
     for epoch in range(num_epochs):
+        # 训练一个完成
+        logging.info("开始训练epoch : {}".format(epoch+1))
         model_handler.train_step()
+        logging.info("epoch : {} 训练完成 loss_total:{}".format(epoch+1, model_handler.loss))
 
-        if epoch >= num_warm:
+        # save final checkpoint
+        logging.info("保存模型 epoch:{}".format(epoch+1))
+        model_handler.save(num="{}".format(epoch+1))
+
+        # 两个epoch测一次
+        if epoch >= num_warm and epoch % 1==0:
+            logging.info("测试模型")
             if verbose:
             # print training loss and training (& dev) scores, ignores the first few epochs
-                print("training loss: {}".format(model_handler.loss))
+                # print("training loss: {}".format(model_handler.loss))
                 # eval model on training data
                 if not is_bert:
                     # don't do train eval if bert, because super slow
+                    logging.info("测试模型 on not bert")
                     trn_scores = model_handler.eval_and_print(data_name='TRAIN')
+                    logging.info("测试模型 on not bert完成")
                 # update best scores
                 if dev_data is not None:
+                    logging.info("测试模型 dev_data is not None")
                     dev_scores = model_handler.eval_and_print(data=dev_data, data_name='DEV')
-                    model_handler.save_best(scores=dev_scores)
+                    model_handler.save_best(scores=dev_scores, data_name="{}".format(epoch+1))
+                    logging.info("测试模型 dev_data is not None完成")
                 else:
-                    model_handler.save_best(scores=trn_scores)
+                    logging.info("测试模型 dev_data is None")
+                    model_handler.save_best(scores=trn_scores, data_name="{}".format(epoch+1))
+                    logging.info("测试模型 dev_data is None完成")
             if early_stopping:
                 l = model_handler.loss # will be dev loss because evaled last
                 if l < prev_dev_loss:
+                    logging.info("early_stopping break")
                     break
+            logging.info("模型测试完成")
 
     print("TRAINED for {} epochs".format(epoch))
 
@@ -90,6 +111,7 @@ if __name__ == '__main__':
     ####################
     # load config file #
     ####################
+    logging.info("开始读取配置文件")
     with open(args['config_file'], 'r') as f:
         config = dict()
         for l in f.readlines():
@@ -118,6 +140,7 @@ if __name__ == '__main__':
     # LOAD DATA #
     #############
     # load training data
+    logging.info("开始读取训练数据")
     if 'bert' not in config and 'bert' not in config['name']:
         vocab_name = '../resources/{}.vocab.pkl'.format(vec_name)
         data = datasets.StanceData(args['trn_data'], vocab_name,
@@ -260,6 +283,7 @@ if __name__ == '__main__':
                                                       **kwargs)
 
     elif 'tganet' in config['name']:
+        logging.info("进入了tganet")
         batch_args = {'keep_sen': False}
         input_layer = im.JointBERTLayerWithExtra(vecs=topic_vecs, use_cuda=use_cuda,
                                                      use_both=(config.get('use_ori_topic', '1') == '1'),

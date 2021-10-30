@@ -21,6 +21,7 @@ def load_vectors(vecfile, dim=300, unk_rand=True, seed=0):
     return vecs
 
 
+# ! 这是加载每一个batch的函数
 def prepare_batch(sample_batched, **kwargs):
     '''
     Prepares a batch of data to be used in training or evaluation. Includes the text reversed.
@@ -62,6 +63,7 @@ def prepare_batch(sample_batched, **kwargs):
     return args
 
 
+# ! 这个是用到的dataloader
 class DataSampler:
     '''
     A sampler for a dataset. Can get samples of differents sizes.
@@ -82,7 +84,7 @@ class DataSampler:
         return len(self.data)
 
     def num_batches(self):
-        return len(self.data) / float(self.batch_size)
+        return int(len(self.data) / float(self.batch_size))
 
     def __iter__(self):
         self.indices = list(range(len(self.data)))
@@ -95,6 +97,9 @@ class DataSampler:
             batch = [self.data.__getitem__(i) for i in idxs]
             self.indices = self.indices[self.batch_size:]
             return batch
+        elif len(self) != 0:
+            self.reset()
+            return next(self)
         else:
             raise StopIteration
 
