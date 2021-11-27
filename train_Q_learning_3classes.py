@@ -31,14 +31,16 @@ batch_size = config.batch_size
 num_classes = 3 # 做二分类
 action_num = 2  # 两种动作
 train_data_file = config.train_data_file
+test_data_file = "./Data/testdata-taskB-all-annotations.txt"
 lr_base = config.lr_base
 lr_min = config.lr_min
-epoch_train = config.epoch_total
+save_per_epoch = config.save_per_epoch
 warm_epoch = config.warm_epoch
-model_dir = "./model_Q_learning"
+model_dir = "./model_Q_learning_3classes"
 model_name = "model"
 temp_model_dir = osp.join(model_dir, model_name+"-temp")
-log_dir = "./log"
+best_model_dir = osp.join(model_dir, model_name+"-best")
+log_dir = "./log_Q_learning_3classes"
 log_name = "log.txt"
 
 # add a log message
@@ -82,6 +84,7 @@ def make_SRNet_label(value, value1, ls_save_index, gamma=0.99):
 
 def backward():
     data = Data_loader(train_data_file, num_classes, size, batch_size)
+    data_test = Data_loader(test_data_file, num_classes, size, batch_size)
 
     global_step = tf.Variable(0, trainable=False, name="global_step")
     # global_step = tf.compat.v1.placeholder(dtype=tf.int32, shape=[], name="global_step")
@@ -96,6 +99,7 @@ def backward():
     sr_net = SRNet_Q_learning()
     # 应该删除那些标签，保留哪些标签
     sr_pred_actions = sr_net.forward(inputs=inputs)
+    print("sr net 参数:{}k".format(sr_net.get_parameter_num()/1000.0))
 
     ''' ######### td net ######### '''
     # td_net的标签是来自于Data
@@ -103,13 +107,14 @@ def backward():
     td_net = TDNet_Q_learning(num_classes=num_classes)
     # 在这样的环境下，每种动作得到的最大回报
     pred_outputs, td_pred_rewards = td_net.forward(inputs=inputs, actions=sr_pred_actions)
+    print("td net 参数:{}k".format(td_net.get_parameter_num()/1000.0))
 
     ''' ######### loss td net ######### '''
     # td_net的更新使用交叉熵
     loss_td_net = Loss_TDNet_Q_learning().get_loss(y_pred=pred_outputs, y_true=td_net_y_true)
     lr_td_net = Learning_rate(lr_base, lr_min=lr_min).warmup_Cosine_lr(
                                                                         global_step=global_step,
-                                                                        total_step=data.steps_per_epoch * epoch_train,
+                                                                        total_step=data.steps_per_epoch * 500,
                                                                         warmup_step=warm_epoch*data.steps_per_epoch
                                                                     )
     optimizer_td_net = Optimizer(lr_td_net).adam()
@@ -124,7 +129,7 @@ def backward():
     loss_sr_net = Loss_SRNet_Q_learning().get_loss(y_true=sr_y_true, y_pred=td_pred_rewards)
     lr_sr_net = Learning_rate(lr_base, lr_min=lr_min).warmup_Cosine_lr(
                                                                         global_step=global_step,
-                                                                        total_step=data.steps_per_epoch * epoch_train,
+                                                                        total_step=data.steps_per_epoch * 500,
                                                                         warmup_step=warm_epoch*data.steps_per_epoch
                                                                     )
     optimizer_sr_net = Optimizer(lr_sr_net).adam()
@@ -143,7 +148,7 @@ def backward():
         ckpt = tf.compat.v1.train.get_checkpoint_state(temp_model_dir)
         if ckpt and ckpt.model_checkpoint_path:
             saver.restore(sess, ckpt.model_checkpoint_path)
-            step = eval(ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1])
+            step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
             print("message: load ckpt model, global_step=" + str(step))
         else:
             print("message:can not fint ckpt model")
@@ -151,6 +156,7 @@ def backward():
 
         # total_step = epoch_train * data.steps_per_epoch
         # while step < total_step:
+        acc_max = 0
         while True:
             reward_total = 0
             td_loss_total = 0
@@ -191,17 +197,30 @@ def backward():
                                                                                 reward_total/data.steps_per_epoch)
                                                                             )
 
-            if curr_epoch % 30 == 0:
+            if curr_epoch % save_per_epoch == 0:
                 # save ckpt model
                 print("message: save ckpt model, step:{}, avg_reward:{}".format(step, reward_total/data.steps_per_epoch))
                 saver.save(sess, osp.join(model_dir, model_name), global_step=step)
 
             # save temp_model
             print("message:saving the temp model, epoch:{}, step:{}, avg_reward:{}".format(curr_epoch, step, reward_total/data.steps_per_epoch))
-            saver.save(sess, osp.join(temp_model_dir, model_name+"-temp"), global_step=step)
+            saver.save(sess, osp.join(temp_model_dir, model_name+"-temp"))
 
-        print("message: save final ckpt model, step=" + str(step))
-        saver.save(sess, osp.join(model_dir, model_name), global_step=step)
+            # 测试
+            count = 0
+            for index in range(0, len(data_test), batch_size):
+                x_batch, y_batch = data_test.get_data(range(index, min(index+batch_size, len(data_test))))
+                [output] = sess.run([tf.argmax(pred_outputs, -1)],feed_dict={inputs:x_batch})
+                y = np.argmax(y_batch, -1)
+                count += np.sum(y==output)
+                pass
+            curr_acc = count*100/len(data_test)
+            print("acc {}%".format(curr_acc))
+            if curr_acc > acc_max:
+                acc_max = curr_acc
+                # save best temp_model
+                add_log("message:saving the best model, epoch:{}, step:{}, acc:{}%".format(curr_epoch, step, curr_acc))
+                saver.save(sess, osp.join(best_model_dir, model_name+"-{}".format(acc_max)))
 
     return
 

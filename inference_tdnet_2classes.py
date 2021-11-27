@@ -20,11 +20,11 @@ import numpy as np
 
 size = config.size
 batch_size = 64
-num_classes = 3 # 做二分类
+num_classes = 2 
 train_data_file = config.train_data_file
 test_data_file = "./Data/testdata-taskB-all-annotations.txt"
-model_dir = "model_Q_learning/{}"
-model_name = "model-5220"
+model_dir = "model_tdnet_2classes/{}"
+model_name = "model-22400"
 
 def forward():
     data = Data_loader(test_data_file, num_classes, size, batch_size)
@@ -32,7 +32,7 @@ def forward():
     td_net = TDNet_Q_learning(num_classes=num_classes)
     pred_outputs, _ = td_net.forward(inputs=inputs, actions=inputs)
 
-    saver = tf.compat.v1.train.Saver(max_to_keep=250)
+    saver = tf.compat.v1.train.Saver()
     with tf.compat.v1.Session() as sess:
         sess.run(tf.compat.v1.global_variables_initializer())
         saver.restore(sess, model_dir.format(model_name))

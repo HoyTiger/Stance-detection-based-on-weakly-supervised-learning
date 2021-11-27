@@ -136,4 +136,4 @@ git
 Data
 !Data/*.txt
 back
-log
+log*

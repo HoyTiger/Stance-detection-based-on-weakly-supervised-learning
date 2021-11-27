@@ -18,11 +18,17 @@ class Data_loader():
         self.size = size
         self.batch_size = batch_size
 
-        self.map_stance = {
+        map_stance2={
+            "AGAINST":[0.99, 0.005],
+            "FAVOR":[0.005, 0.99]
+        }
+        map_stance3 = {
             "AGAINST":[0.99, 0.005, 0.005],
             "NONE":[0.005, 0.99, 0.005],
             "FAVOR":[0.005, 0.005, 0.99]
         }
+
+        self.map_stance = map_stance2 if num_classes==2 else map_stance3
 
         self.__init_args()
         self.ls_padding_vector_tweet = self.padding_vector_word()
@@ -49,6 +55,9 @@ class Data_loader():
             ls_line = line.strip().split('\t')
             # ID	Target	Tweet	Stance	Opinion towards	Sentiment
             assert len(ls_line)==6, "the result of split is illegal, expected {} but get {}".format(6, len(ls_line))
+            # 二分类就不需要None的这一个分类
+            if (ls_line[3] == "NONE") and (self.num_classes==2):
+                continue
             self.ls_id.append(ls_line[0])
             self.ls_target.append(ls_line[1])
             self.ls_tweet.append(ls_line[2])

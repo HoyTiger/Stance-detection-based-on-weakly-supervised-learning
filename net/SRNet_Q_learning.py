@@ -8,8 +8,20 @@ class SRNet_Q_learning():
     '''判断是不是应该删除这一个标签，0删除1保留'''
     def __init__(self) -> None:
         self.num_action = 2
-        self.ls_hidden_layer = [128, 256, 512]
+        self.ls_hidden_layer = [128, 256, 256]
         pass
+
+    def get_parameter_num(self):
+        num = 0
+        for i in range(len(self.ls_hidden_layer)-1):
+            num += self.ls_hidden_layer[i] * self.ls_hidden_layer[i+1]
+        # 加上第一层
+        num += self.ls_hidden_layer[0]
+        # 卷积核长度为3
+        num *= 3
+        # 加上最后一层
+        num += self.ls_hidden_layer[-1]*2 * self.num_action + self.num_action
+        return num
 
     def get_weight(self, shape,regularizer=0.0005):
         w = tf.Variable(tf.random.truncated_normal(shape,stddev = 0.1), name="Conv")

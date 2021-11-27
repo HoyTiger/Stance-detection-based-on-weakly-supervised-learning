@@ -1,7 +1,6 @@
 # coding:utf-8
 # Bi_GRU的实现
 import tensorflow as tf
-import numpy as np
 import logging
 logging.getLogger().setLevel(logging.INFO)
 
@@ -9,8 +8,24 @@ class TDNet_Q_learning():
     def __init__(self, num_classes) -> None:
         self.num_classes = num_classes
         # self.ls_hidden_layer = [128, 256, 512, 1024, 1024]
-        self.ls_hidden_layer = [128, 256, 512]
+        # self.ls_hidden_layer = [128, 256, 512]
+        self.ls_hidden_layer = [128, 256, 256]
+        # 参数量
+
         pass
+
+    def get_parameter_num(self):
+        num = 0
+        for i in range(len(self.ls_hidden_layer)-1):
+            num += self.ls_hidden_layer[i] * self.ls_hidden_layer[i+1]
+        # 加上第一层
+        num += self.ls_hidden_layer[0]
+        # 卷积核长度为3
+        num *= 3
+        # 加上最后一层
+        num += self.ls_hidden_layer[-1]*2 * self.num_classes + self.num_classes
+        return num
+
     
     def get_weight(self, shape,regularizer=0.0005):
         w = tf.Variable(tf.random.truncated_normal(shape,stddev = 0.1), name="Conv")
@@ -49,7 +64,8 @@ class TDNet_Q_learning():
             # outputs = tf.nn.softmax(tf.matmul(rnn_outputs[:, -1, :], weights)+bias, 1)
             outputs = tf.matmul(rnn_outputs[:, -1, :], weights)+bias
 
-            rewards = tf.reduce_mean(actions * (-1*tf.math.log(tf.nn.softmax(outputs, axis=-1))) )
+            # 平均值作为reward
+            rewards = tf.reduce_mean(actions * tf.clip_by_value(-1*tf.math.log(tf.nn.softmax(outputs, axis=-1)), 0, 10) )
         return outputs, rewards
         
 
