@@ -133,8 +133,6 @@ dmypy.json
 paper
 model*
 git
-Data
-!/Data/*.txt
 back
 log*
 !/model_Q_learning_2classes/model-best/model-57.87894381586949*
