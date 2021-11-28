@@ -131,12 +131,7 @@ dmypy.json
 
 # add by rdc
 paper
-!/model_Q_learning_2classes/model-best
-model_Q_learning
-model_Q_learning_2classes
-model_Q_learning_3classes
-model_tdnet_2classes
-model_tdnet_3classes
+model*
 git
 back
 log*
