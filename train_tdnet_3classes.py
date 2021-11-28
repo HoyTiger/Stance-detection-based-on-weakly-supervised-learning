@@ -24,6 +24,7 @@ import numpy as np
 import os.path as osp
 from tqdm import tqdm
 from utils import tools
+import gc
 
 size = config.size
 batch_size = config.batch_size
@@ -117,20 +118,17 @@ def backward():
             saver.save(sess, osp.join(temp_model_dir, model_name+"-temp"))
 
             # 测试
-            count = 0
-            for index in range(0, len(data_test), batch_size):
-                x_batch, y_batch = data_test.get_data(range(index, min(index+batch_size, len(data_test))))
-                [output] = sess.run([tf.argmax(pred_outputs, -1)],feed_dict={inputs:x_batch})
-                y = np.argmax(y_batch, -1)
-                count += np.sum(y==output)
-                pass
-            curr_acc = count*100/len(data_test)
+            x_batch, y_batch = data_test.get_data(range(len(data_test)))
+            [output] = sess.run([pred_outputs],feed_dict={inputs:x_batch})
+            curr_acc, _ = tools.f1(y_pred=output, y_true=y_batch, num_classes=num_classes)
+            curr_acc *= 100
             print("acc {}%".format(curr_acc))
             if curr_acc > acc_max:
                 acc_max = curr_acc
                 # save best temp_model
                 add_log("message:saving the best model, epoch:{}, step:{}, acc:{}%".format(curr_epoch, step, curr_acc))
                 saver.save(sess, osp.join(best_model_dir, model_name+"-{}".format(acc_max)))
+            gc.collect()
     return
 
 def main():

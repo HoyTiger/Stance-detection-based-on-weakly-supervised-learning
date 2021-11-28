@@ -133,7 +133,5 @@ dmypy.json
 paper
 model*
 git
-Data
-!Data/*.txt
 back
 log*

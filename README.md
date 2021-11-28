@@ -7,3 +7,4 @@ python train_Q_learning_2classes.py
 ``` bash
 python inference_Q_learning_2classes.py
 ```
+* **其他的代码文件没有改，可能多多少少有问题**

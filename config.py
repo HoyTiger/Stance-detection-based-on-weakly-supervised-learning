@@ -3,7 +3,7 @@
 size = 24
 batch_size = 32
 num_classes = 3
-train_epoch = 500
+train_epoch = 300
 save_per_epoch = 50
 warm_epoch = 10
 lr_base = 0.00125 * batch_size/64
