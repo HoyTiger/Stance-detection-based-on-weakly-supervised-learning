@@ -2,6 +2,7 @@
 # 工具函数
 import os.path as osp
 import time
+import numpy as np
 
 '''
 ##################### 文件操作 #####################
@@ -48,3 +49,42 @@ def get_curr_date():
     t = time.gmtime()
     time_str = time.strftime("%Y-%m-%d-%H-%M-%S",t)
     return time_str
+
+'''
+######################## 准确率等 ####################
+'''
+def f1(y_pred, y_true, num_classes):
+    '''
+    y_pred:[batch, num_classes]
+    y_true:[batch, num_classes]
+    num_classes:分类数
+    精确率:我对了多少
+    召回率:我预测为对的对了多少
+    '''
+    arr_pred = np.argmax(y_pred, -1)
+    arr_label = np.argmax(y_true, -1)
+    # arr_pred = y_pred
+    # arr_label = y_true
+    ls_result = []
+
+    for index in range(num_classes):
+        # 计算每一类的f1分数
+        # 标签里面有多少个 index ,和其index
+        curr_label_index = np.where(arr_label==index)
+        curr_label = arr_label[curr_label_index]
+        curr_pred = arr_pred[curr_label_index]
+        # 预测对了几个index
+        num_right = np.sum(curr_label==curr_pred)
+        # 预测了几个index
+        curr_pred_index = len(np.where(arr_pred==index)[0])
+        # 精度
+        curr_precision = 0 if len(curr_label)==0 else (num_right*1.0 / len(curr_label))
+        # 召回率
+        curr_recall = 0 if curr_pred_index==0 else (num_right*1.0 / curr_pred_index)
+        ls_result.append([curr_precision, curr_recall])
+        pass
+
+    # 计算f1
+    ls_f1 = [0 if (x[0]+x[1])==0 else ((2*x[0]*x[1])/(x[0]+x[1])) for x in ls_result]
+
+    return np.mean(ls_f1), ls_result
