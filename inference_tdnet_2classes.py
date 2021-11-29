@@ -16,35 +16,60 @@ import config
 import tensorflow as tf
 from net.TDNet_Q_learning import TDNet_Q_learning
 from dataLoader.Data_loader import Data_loader
+from tqdm import tqdm
+import bitermplus as btm
 import numpy as np
+from utils import tools
 
 size = config.size
 batch_size = 64
 num_classes = 2 
 train_data_file = config.train_data_file
 test_data_file = "./Data/testdata-taskB-all-annotations.txt"
-model_dir = "model_tdnet_2classes/{}"
-model_name = "model-22400"
+model_dir = "model_tdnet_2classes/model-best/{}"
+model_name = "model-53.76197735191638"
 
 def forward():
-    data = Data_loader(test_data_file, num_classes, size, batch_size)
+    data = Data_loader(train_data_file, num_classes, size, batch_size)
+    # #### 测试数据 ####
+    data_test = Data_loader(test_data_file, num_classes, size, batch_size)
+    ls_vectorized_tweet = btm.get_vectorized_docs(data_test.ls_tweet, data.map_word2id)
+    '''把单词向量padding 0'''
+    ls_padding_vector_tweet = []
+    for line in tqdm(ls_vectorized_tweet):
+        curr = [0] * size
+        curr[0: min(size, len(line))] = line
+        ls_padding_vector_tweet.append(curr)
+    # 标签
+    ls_labels = data_test.ls_labels
+    # 全部测试数据
+    test_x = []
+    test_y = []
+    for index in range(len(data_test)):
+        x = ls_padding_vector_tweet[index]
+        y = ls_labels[index]
+        test_x.append(x)
+        test_y.append(y)
+    test_x = np.asarray(test_x).astype(np.float32)
+    test_x = np.expand_dims(test_x, -1)
+    test_y = np.asarray(test_y).astype(np.float32)
+
+
+
+
     inputs = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, size, 1], name="inputs")
     td_net = TDNet_Q_learning(num_classes=num_classes)
-    pred_outputs, _ = td_net.forward(inputs=inputs, actions=inputs)
+    pred_outputs, _ = td_net.forward(inputs=inputs, actions=0)
 
     saver = tf.compat.v1.train.Saver()
     with tf.compat.v1.Session() as sess:
         sess.run(tf.compat.v1.global_variables_initializer())
         saver.restore(sess, model_dir.format(model_name))
                 
-        count = 0
-        for index in range(0, len(data), batch_size):
-            x_batch, y_batch = data.get_data(range(index, min(index+batch_size, len(data))))
-            [output] = sess.run([tf.argmax(pred_outputs, -1)],feed_dict={inputs:x_batch})
-            y = np.argmax(y_batch, -1)
-            count += np.sum(y==output)
-            pass
-        print("acc {}%".format(count*100/len(data)))
+        [output] = sess.run([pred_outputs],feed_dict={inputs:test_x})
+        curr_acc, _ = tools.f1(y_pred=output, y_true=test_y, num_classes=num_classes)
+        print("f1 {}%".format(curr_acc*100.0))
+
 
     return
 

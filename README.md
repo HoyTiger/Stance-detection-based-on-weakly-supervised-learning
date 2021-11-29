@@ -1,4 +1,5 @@
 # Stance-detection-based-on-weakly-supervised-learning
+## 强化学习
 * training
 ``` bash
 python train_Q_learning_2classes.py
@@ -7,4 +8,12 @@ python train_Q_learning_2classes.py
 ``` bash
 python inference_Q_learning_2classes.py
 ```
-* **其他的代码文件没有改，可能多多少少有问题**
+## 不加强化学习
+* training
+``` bash
+python train_tdnet_2classes.py
+```
+* inference
+``` bash
+python inference_tdnet_2classes.py
+```
