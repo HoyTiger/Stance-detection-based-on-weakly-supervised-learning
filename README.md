@@ -19,3 +19,5 @@ python train_tdnet_2classes.py
 python inference_tdnet_2classes.py
 ```
 * 不加强化学习后的F1分数是53.762
+
+* **以上结果还有提升空间**
