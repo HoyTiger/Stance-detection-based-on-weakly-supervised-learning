@@ -9,6 +9,7 @@ class SRNet_Q_learning():
     def __init__(self) -> None:
         self.num_action = 2
         self.ls_hidden_layer = [128, 256, 256]
+        # self.ls_hidden_layer = [128, 256, 512]
         pass
 
     def get_parameter_num(self):

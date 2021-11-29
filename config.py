@@ -1,11 +1,11 @@
 # coding:utf-8
 # 配置文件
 size = 24
-batch_size = 32
+batch_size = 64
 num_classes = 3
-train_epoch = 300
+train_epoch = 500
 save_per_epoch = 50
-warm_epoch = 10
+warm_epoch = 30
 lr_base = 0.00125 * batch_size/64
 lr_min = lr_base/50.0
 

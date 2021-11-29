@@ -1,0 +1,3 @@
+model_checkpoint_path: "model-58.758058488274315"
+all_model_checkpoint_paths: "model-58.758058488274315"
+all_model_checkpoint_paths: "../model-temp/model-temp"

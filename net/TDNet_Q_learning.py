@@ -10,6 +10,7 @@ class TDNet_Q_learning():
         # self.ls_hidden_layer = [128, 256, 512, 1024, 1024]
         # self.ls_hidden_layer = [128, 256, 512]
         self.ls_hidden_layer = [128, 256, 256]
+        # self.ls_hidden_layer = [128, 256]
         # 参数量
 
         pass
@@ -53,7 +54,10 @@ class TDNet_Q_learning():
         return rnn_output
 
     def forward(self, inputs, actions):
-        '''得到这个环境下估计的每一种选择的reward'''
+        '''
+        得到这个环境下估计的每一种选择的reward
+        actions:[batch, 1]
+        '''
         with tf.compat.v1.variable_scope("td_net"):
             rnn_outputs = self.RNN_Bi_GRU(inputs)
 
@@ -64,8 +68,7 @@ class TDNet_Q_learning():
             # outputs = tf.nn.softmax(tf.matmul(rnn_outputs[:, -1, :], weights)+bias, 1)
             outputs = tf.matmul(rnn_outputs[:, -1, :], weights)+bias
 
-            # 平均值作为reward
-            rewards = tf.reduce_mean(actions * tf.clip_by_value(-1*tf.math.log(tf.nn.softmax(outputs, axis=-1)), 0, 10) )
-        return outputs, rewards
+            reward_action = tf.reduce_mean(actions * tf.clip_by_value(-1*tf.math.log(tf.nn.softmax(outputs, axis=-1)), 0, 10) )
+        return outputs, reward_action
         
 

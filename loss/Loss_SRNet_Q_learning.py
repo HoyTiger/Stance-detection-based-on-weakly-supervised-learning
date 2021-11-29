@@ -7,5 +7,5 @@ class Loss_SRNet_Q_learning():
         pass
 
     def get_loss(self, y_pred, y_true):
-        loss = tf.reduce_mean(tf.square(y_true-y_pred))
+        loss = tf.reduce_mean(tf.square(y_true - y_pred))
         return loss

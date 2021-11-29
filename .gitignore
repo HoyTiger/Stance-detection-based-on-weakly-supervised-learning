@@ -131,7 +131,6 @@ dmypy.json
 
 # add by rdc
 paper
-model*
 git
 back
 log*
