@@ -34,6 +34,7 @@ model_name = "model-58.758058488274315"
 
 def forward():
     data = Data_loader(train_data_file, num_classes, size, batch_size)
+    data.tongji()
     # #### 测试数据 ####
     data_test = Data_loader(test_data_file, num_classes, size, batch_size)
     ls_vectorized_tweet = btm.get_vectorized_docs(data_test.ls_tweet, data.map_word2id)

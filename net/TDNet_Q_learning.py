@@ -11,7 +11,6 @@ class TDNet_Q_learning():
         # self.ls_hidden_layer = [128, 256, 512]
         self.ls_hidden_layer = [128, 256, 256]
         # self.ls_hidden_layer = [128, 256]
-        # 参数量
 
         pass
 
@@ -56,7 +55,7 @@ class TDNet_Q_learning():
     def forward(self, inputs, actions):
         '''
         得到这个环境下估计的每一种选择的reward
-        actions:[batch, 1]
+        actions:[batch, 2]
         '''
         with tf.compat.v1.variable_scope("td_net"):
             rnn_outputs = self.RNN_Bi_GRU(inputs)

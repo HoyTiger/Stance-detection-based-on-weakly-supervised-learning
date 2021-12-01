@@ -123,7 +123,6 @@ def backward():
 
 
     global_step = tf.Variable(0, trainable=False, name="global_step")
-    # global_step = tf.compat.v1.placeholder(dtype=tf.int32, shape=[], name="global_step")
 
     # srnet和tdnet的输入都是data
     inputs = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, size, 1], name="inputs")
@@ -139,7 +138,7 @@ def backward():
     # td_net的标签是来自于Data
     td_net_y_true = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, num_classes], name="td_net_y_true")
     td_net = TDNet_Q_learning(num_classes=num_classes)
-    # 在这样的环境下，每种动作得到的最大回报
+    # 在这样的环境下，每种动作得到的最大value
     td_pred_outputs, td_pred_rewards = td_net.forward(inputs=inputs, actions=sr_pred_actions)
     print("td net 参数:{}k".format(td_net.get_parameter_num()/1000.0))
 
@@ -196,7 +195,7 @@ def backward():
             for _ in tqdm(range(data.steps_per_epoch)):
                 x_batch, y_batch = next(data)
 
-                # 1. 当前环境下应该做什么action并且应该得到怎样的环境结果及其reward，以及老的决策
+                # 1. 当前环境下应该做什么action并且应该得到怎样的环境结果
                 sr_actions, outputs = sess.run([sr_pred_actions, td_pred_outputs], 
                                                                             feed_dict={inputs:x_batch})
 

@@ -132,11 +132,6 @@ class Data_loader():
         '''
         # use tf.data to load the image and label
         ls_index = tf_inputs.tolist()
-        # imgs_batch, xmls_batch = tf_inputs
-        # decode_type = 'UTF-8'            
-        # # label_name = xmls_batch[i]
-        # label_name = label_name.decode(decode_type)
-        # img_name = img_name.decode(decode_type)     # chinese also working
 
         return self.get_data(ls_index=ls_index)
 

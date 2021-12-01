@@ -38,9 +38,6 @@ class SRNet_Q_learning():
 
     def RNN_Bi_GRU(self, inputs):
         "bi gru网络"
-        # BiRNN/BiLSTM/BiGRU
-        # fw_cell = tf.nn.rnn_cell.BasicRNNCell(100) 
-        # bw_cell = tf.nn.rnn_cell.BasicRNNCell(100)
 
         ls_bi_rnn_fw_cell_cell = [tf.nn.rnn_cell.GRUCell(num_hidden) for num_hidden in self.ls_hidden_layer]
         ls_bi_rnn_back_cell_cell = [tf.nn.rnn_cell.GRUCell(num_hidden) for num_hidden in self.ls_hidden_layer]
@@ -55,7 +52,7 @@ class SRNet_Q_learning():
         return rnn_output
 
     def forward(self, inputs):
-        '''在inputs情况下执行actions估计得到的奖励'''
+        '''在inputs情况下执行actions估计得到的value'''
         rnn_outputs = self.RNN_Bi_GRU(inputs)
 
         in_channels = self.ls_hidden_layer[-1]*2 
